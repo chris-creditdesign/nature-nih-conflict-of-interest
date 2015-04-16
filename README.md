@@ -21,6 +21,20 @@ Extract the relevant sheet from `FCOI working doc.xlsx` as a csv
 
 	in2csv --sheet Colored "ref/excel/FCOI working doc.xlsx" > csv/fcoi.csv
 
+Use `wc -l` to count the number of lines in our the file:
+
+	wc -l csv/fcoi.csv
+
+-	`csv/fcoi.csv` **4,416**	
+
+There are many duplicate `FCOI_ID`s. Presuming each id to be unique lets remove the duplicates, where `FCOI_ID` is the first ie. zeroth column:
+	
+	python python/remove-duplicate-entries.py csv/fcoi.csv csv/fcoi-clean.csv 0
+
+	wc -l csv/fcoi-clean.csv
+
+-	`csv/fcoi-clean.csv` **2,151**
+
 Columns of interest in the NIH documents to match with the FCOI document
 
 NIH RePorter document	| FCOI document
@@ -45,18 +59,45 @@ Combine all of the entries for all four years into one CSV file:
 
 	csvstack csv/nih_2014.csv csv/nih_2013.csv csv/nih_2012.csv csv/nih_2011.csv > csv/nih_all.csv
 
-Use `wc -l` to count the number of lines in our two files
+	wc -l csv/nih_all.csv
 
 -	`csv/nih_all.csv` **315,065**
--	`csv/fcoi.csv` **4,416**
 
-Join the two files, matching on `PROJECT_TITLE` and `GRANT TITLE`:
+Lets try removing duplicate `APPLICATION_ID`s to see if we have duplicates:
 
-	csvjoin -c "PROJECT_TITLE, GRANT TITLE" --outer  csv/nih_all.csv csv/fcoi.csv > csv/nih-fcoi-join.csv
+	python python/remove-duplicate-entries.py csv/nih_all.csv csv/nih-all-clean.csv 0
 
-We can now remove the individual csv files to keep things tidy:
+	wc -l csv/nih-all-clean.csv
+	rm csv/nih-all-clean.csv
+
+-	`csv/nih-all-clean.csv` **315,065**
 	
-	rm csv/nih_2014.csv csv/nih_2013.csv csv/nih_2012.csv csv/nih_2011.csv
+
+Now we can attempt to count the number of grants for each institution as well as the number of fcoi investigations:
+
+	python python/sum-nih.py csv/nih_all.csv csv/nih-summed.csv
+	python python/sum-fcoi.py csv/fcoi.csv csv/fcoi-summed.csv
+
+We can now join the two files:
+
+	csvjoin -c "ORG_NAME, SUBMITTING INSTITUTION" --outer csv/nih-summed.csv csv/fcoi-summed.csv > csv/nih-fcoi-summed-join.csv
+
+
+<!-- Join the two files, matching on `PROJECT_TITLE`, `GRANT TITLE` :
+
+	csvjoin -c "PROJECT_TITLE, GRANT TITLE" --outer  csv/nih_all.csv csv/fcoi-clean.csv > csv/nih-fcoi-join.csv
+
+Now we can attempt to count the number of grants for each institution as well as the number of fcoi investigations:
+
+	python python/sum-fcoi.py csv/nih-fcoi-join.csv csv/nih-fcoi-summed.csv -->
+
+<!-- Let's also count how many conflicts of interest remain:
+
+	python python/count-fcoi.py csv/nih-fcoi-join.csv -->
+
+<!--We can now remove the individual csv files to keep things tidy:
+	
+ rm csv/nih_2014.csv csv/nih_2013.csv csv/nih_2012.csv csv/nih_2011.csv 
 
 The new file has an extra 13563 entries. 
 
@@ -86,7 +127,7 @@ Let's also count how many conflicts of interest remain:
 
 Now we can attempt to count the number of grants for each institution as well as the number of fcoi investigations:
 
-	python python/sum-fcoi.py csv/nih-fcoi-clean-b.csv csv/nih-fcoi-summed.csv
+	python python/sum-fcoi.py csv/nih-fcoi-clean-b.csv csv/nih-fcoi-summed.csv -->
 
 
 
